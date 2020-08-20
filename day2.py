@@ -15,8 +15,10 @@ from prompt_toolkit.layout.containers import (
     WindowAlign
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
+from prompt_toolkit.data_structures import Point
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.layout import Layout
+from prompt_toolkit.layout import ScrollOffsets
 from prompt_toolkit.widgets.base import Frame
 
 # We have an input tape with all the opcodes and input in a file
@@ -33,6 +35,12 @@ pointer: int = 0
 # Part of the problem statement described modifying the tape
 tape[1] = 12
 tape[2] = 2
+
+def render_tape_range(begin=0, end=None) -> str:
+    if end is None:
+        end = len(tape)
+    
+    return ''.join(f"{x: >5}   " for x in tape[begin:end])
 
 def op(opcode: int, val1: int, val2: int, output: int) -> None:
     if not isinstance(opcode, int) or opcode not in [1,2,99]:
@@ -59,13 +67,18 @@ bindings = KeyBindings()
 def _(event):
     event.app.exit()
 
+scroll_offset = 0
 @bindings.add("left")
 def _(event):
     "Move the tape left"
+    global scroll_offset
+    scroll_offset += 1
 
 @bindings.add("right")
 def _(event):
     "Move the tape right"
+    global scroll_offset
+    scroll_offset -= 1
 
 app = Application(
     layout=Layout(
@@ -100,7 +113,7 @@ app = Application(
                 content=HSplit([
                     Window(content=FormattedTextControl(text=""), height=1),
                     Window(
-                        content=FormattedTextControl(text="    0       1       3       4       5       6       7       8       9      10      11"),
+                        content=FormattedTextControl(text=render_tape_range()),
                         height=1,
                         align=WindowAlign.LEFT,
                     ),
@@ -130,94 +143,40 @@ app = Application(
     ),
     key_bindings=bindings,
 )
+
+app = Application(
+    layout=Layout(
+        Window(
+            content=FormattedTextControl(
+                text="         ".join(map(str, range(20))),
+                get_cursor_position=lambda : Point(2,0),
+            ),
+            width=None,
+            height=1,
+            z_index=None,
+            dont_extend_width=True,
+            dont_extend_height=True,
+            ignore_content_width=False,
+            ignore_content_height=False,
+            left_margins=None,
+            right_margins=None,
+            scroll_offsets=None,
+            allow_scroll_beyond_bottom=False,
+            wrap_lines=False,
+            get_vertical_scroll=None,
+            get_horizontal_scroll=lambda win, a=scroll_offset: a,
+            always_hide_cursor=False,
+            cursorline=False,
+            cursorcolumn=True,
+            colorcolumns=None,
+            align=WindowAlign.LEFT,
+            style="",
+            char=None,
+            get_line_prefix=None,
+        )
+    ),
+    key_bindings=bindings,
+)
+
 if __name__ == "__main__":
     app.run()
-
-
-#app = Application(
-#    layout=Layout(
-#        VSplit(
-#            children=[
-#                HSplit(
-#                    children=[
-#                        Window(
-#                            content=FormattedTextControl(text="      "),
-#                            height=1,
-#                            width=6,
-#                        ),
-#                        Window(
-#                            content=FormattedTextControl(text="    0 "),
-#                            height=1,
-#                        ),
-#                        Window(
-#                            content=FormattedTextControl(text="      "),
-#                            height=1,
-#                        )
-#                    ],
-#                    width=6,
-#                ),
-#                HSplit(
-#                    children=[
-#                        Window(char="┏", height=1, width=1),
-#                        Window(char="┃", height=1, width=1),
-#                        Window(char="┗", height=1, width=1)
-#                    ]
-#                ),
-#                HSplit(
-#                    children=[
-#                        Window(char="━", width=31, height=1),
-#                        Window(
-#                            content=FormattedTextControl(
-#                                text="     1       3       4       5 "
-#                            ),
-#                            height=1,
-#                        ),
-#                        Window(char="━", width=31, height=1),
-#                    ]
-#                )
-#            ]
-#        )
-#    ),
-#    key_bindings=bindings,
-#)
-#app.run()
-
-#app = Application(
-#    layout=Layout(
-#        HSplit(
-#            [
-#                VSplit([
-#                    Window(char='┌', width=36, height=1),
-#                    Window(char='─', width=7, height=1),
-#                    Window(char='┐', width=1, height=1),
-#                ]),
-#                VSplit([
-#                    Window(content=FormattedTextControl(text="    0 "), width=6, height=3, align=WindowAlign.CENTER),
-#                    Frame(
-#                        body=Window(content=FormattedTextControl(
-#                            text="     1       3       4       5 "
-#                        ),
-#                        width=32,
-#                        height=3,
-#                    )),
-#                    HSplit([
-#                        Window(content=FormattedTextControl(text="     ↓"), height=1),
-#                        Window(
-#                            content=FormattedTextControl(
-#                                text="     6       7       8       9"
-#                            ),
-#                            height=1,
-#                        ),
-#                        Window(char=" ", height=1)
-#                    ])
-#                ]),
-#                Window(content=FormattedTextControl(text="           ↓       ↓       ↓")),
-#                Window(content=FormattedTextControl(text="         add        3       4 = 7")),
-#            ],
-#            height=Dimension(min=6,max=6),
-#        )
-#    ),
-#    min_redraw_interval=0.5,
-#    key_bindings=bindings,
-#)
-#app.run()
